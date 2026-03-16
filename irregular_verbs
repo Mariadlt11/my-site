@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Irregular Verbs</title>
+<style>
+body{
+font-family:Arial, sans-serif;
+background:#f4f7fb;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+color:#333;
+}
+
+.container{
+background:white;
+padding:30px;
+border-radius:14px;
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
+width:460px;
+text-align:center;
+}
+
+h1{color:#4a6fa5;margin-top:0}
+
+.instructions{font-size:15px;margin-bottom:10px}
+
+.score{font-size:18px;font-weight:bold;color:#2c7be5;margin-bottom:10px}
+
+.progress{
+width:100%;
+height:12px;
+background:#e6ecff;
+border-radius:10px;
+overflow:hidden;
+margin-bottom:18px
+}
+
+.progress-bar{
+height:100%;
+width:0%;
+background:#6c8cff
+}
+
+.verb{font-size:30px;font-weight:bold;color:#2c7be5}
+
+.question{font-size:22px;margin:20px 0}
+
+.options button{
+width:100%;
+padding:15px;
+margin:8px 0;
+font-size:18px;
+border:none;
+border-radius:10px;
+background:#e3ecff;
+cursor:pointer
+}
+
+.options button:hover{background:#ccd9ff}
+
+.feedback{font-size:18px;font-weight:bold;min-height:24px;margin-top:10px}
+
+.correct{color:#2e8b57}
+.incorrect{color:#d64545}
+
+.next-btn{
+margin-top:14px;
+padding:12px 20px;
+font-size:16px;
+border:none;
+border-radius:8px;
+background:#4a6fa5;
+color:white;
+cursor:pointer;
+display:none
+}
+
+.next-btn:hover{background:#3c5988}
+
+.stars{
+font-size:28px;
+margin-top:10px
+}
+
+.mode-btn{
+margin-bottom:12px;
+padding:10px 14px;
+font-size:14px;
+border:none;
+border-radius:8px;
+background:#ffd966;
+cursor:pointer
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+<h1>Irregular Verbs</h1>
+
+<div class="instructions">Choose the correct verb form.</div>
+
+<button class="mode-btn" onclick="toggleChallenge()">🎮 Class Challenge Mode</button>
+
+<div class="score" id="score">Score: 0</div>
+
+<div class="progress">
+<div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="question">
+Infinitive: <span class="verb" id="verb"></span><br><br>
+<span id="questionText"></span>
+</div>
+
+<div class="options" id="options"></div>
+
+<div class="feedback" id="feedback"></div>
+
+<button class="next-btn" id="nextBtn" onclick="nextQuestion()">Next</button>
+
+<div class="stars" id="stars"></div>
+
+</div>
+
+<script>
+
+const verbs=[
+{v:"be",p:"was/were",pp:"been"},
+{v:"become",p:"became",pp:"become"},
+{v:"begin",p:"began",pp:"begun"},
+{v:"break",p:"broke",pp:"broken"},
+{v:"bring",p:"brought",pp:"brought"},
+{v:"build",p:"built",pp:"built"},
+{v:"buy",p:"bought",pp:"bought"},
+{v:"catch",p:"caught",pp:"caught"},
+{v:"choose",p:"chose",pp:"chosen"},
+{v:"come",p:"came",pp:"come"},
+{v:"cut",p:"cut",pp:"cut"},
+{v:"do",p:"did",pp:"done"},
+{v:"drink",p:"drank",pp:"drunk"},
+{v:"drive",p:"drove",pp:"driven"},
+{v:"eat",p:"ate",pp:"eaten"},
+{v:"fall",p:"fell",pp:"fallen"},
+{v:"feel",p:"felt",pp:"felt"},
+{v:"find",p:"found",pp:"found"},
+{v:"fly",p:"flew",pp:"flown"},
+{v:"forget",p:"forgot",pp:"forgotten"},
+{v:"get",p:"got",pp:"got/gotten"},
+{v:"give",p:"gave",pp:"given"},
+{v:"go",p:"went",pp:"gone"},
+{v:"grow",p:"grew",pp:"grown"},
+{v:"have",p:"had",pp:"had"},
+{v:"hear",p:"heard",pp:"heard"},
+{v:"keep",p:"kept",pp:"kept"},
+{v:"know",p:"knew",pp:"known"},
+{v:"learn",p:"learnt",pp:"learnt"},
+{v:"leave",p:"left",pp:"left"},
+{v:"lose",p:"lost",pp:"lost"},
+{v:"make",p:"made",pp:"made"},
+{v:"meet",p:"met",pp:"met"},
+{v:"pay",p:"paid",pp:"paid"},
+{v:"put",p:"put",pp:"put"},
+{v:"read",p:"read",pp:"read"},
+{v:"ride",p:"rode",pp:"ridden"},
+{v:"ring",p:"rang",pp:"rung"},
+{v:"run",p:"ran",pp:"run"},
+{v:"say",p:"said",pp:"said"},
+{v:"see",p:"saw",pp:"seen"},
+{v:"sell",p:"sold",pp:"sold"},
+{v:"send",p:"sent",pp:"sent"},
+{v:"sing",p:"sang",pp:"sung"},
+{v:"sit",p:"sat",pp:"sat"},
+{v:"sleep",p:"slept",pp:"slept"},
+{v:"speak",p:"spoke",pp:"spoken"},
+{v:"spend",p:"spent",pp:"spent"},
+{v:"stand",p:"stood",pp:"stood"},
+{v:"swim",p:"swam",pp:"swum"},
+{v:"take",p:"took",pp:"taken"},
+{v:"teach",p:"taught",pp:"taught"},
+{v:"tell",p:"told",pp:"told"},
+{v:"think",p:"thought",pp:"thought"},
+{v:"throw",p:"threw",pp:"thrown"},
+{v:"understand",p:"understood",pp:"understood"},
+{v:"wake",p:"woke",pp:"woken"},
+{v:"wear",p:"wore",pp:"worn"},
+{v:"win",p:"won",pp:"won"},
+{v:"write",p:"wrote",pp:"written"}
+];
+
+let index=0;
+let score=0;
+let mistakes=[];
+let reviewMode=false;
+let challenge=false;
+
+function shuffle(arr){return arr.sort(()=>Math.random()-0.5)}
+
+function playSound(type){
+const ctx=new(window.AudioContext||window.webkitAudioContext)();
+const osc=ctx.createOscillator();
+osc.type="sine";
+osc.frequency.value=type==="good"?600:200;
+osc.connect(ctx.destination);
+osc.start();
+setTimeout(()=>osc.stop(),150);
+}
+
+function toggleChallenge(){
+challenge=!challenge;
+document.body.style.background=challenge?"#eef7ff":"#f4f7fb";
+}
+
+function getCurrentList(){
+return reviewMode?mistakes:verbs;
+}
+
+function loadQuestion(){
+const list=getCurrentList();
+
+if(index>=list.length){
+finishGame();
+return;
+}
+
+const v=list[index];
+const askPast=Math.random()<0.5;
+const correct=askPast?v.p:v.pp;
+
+let options=[correct,
+correct+"ed",
+v.v+"ed"
+];
+
+options=shuffle(options);
+
+
+const optionsDiv=document.getElementById("options");
+optionsDiv.innerHTML="";
+
+options.forEach(o=>{
+const btn=document.createElement("button");
+btn.textContent=o;
+btn.onclick=()=>checkAnswer(o,correct,v);
+optionsDiv.appendChild(btn);
+});
+
+
+document.getElementById("verb").textContent=v.v;
+
+document.getElementById("questionText").textContent=
+askPast?"What is the past simple form?":"What is the past participle form?";
+
+updateProgress();
+}
+
+function checkAnswer(ans,correct,v){
+const fb=document.getElementById("feedback");
+
+if(ans===correct){
+score++;
+fb.textContent="Great job! 🎉";
+fb.className="feedback correct";
+playSound("good");
+}else{
+fb.textContent="Good try!";
+fb.className="feedback incorrect";
+playSound("bad");
+if(!reviewMode)mistakes.push(v);
+}
+
+
+document.getElementById("score").textContent="Score: "+score;
+
+document.querySelectorAll(".options button").forEach(b=>b.disabled=true);
+
+document.getElementById("nextBtn").style.display="inline-block";
+}
+
+function nextQuestion(){
+index++;
+
+document.getElementById("feedback").textContent="";
+
+document.getElementById("nextBtn").style.display="none";
+
+loadQuestion();
+}
+
+function updateProgress(){
+const list=getCurrentList();
+const percent=(index/list.length)*100;
+document.getElementById("progressBar").style.width=percent+"%";
+}
+
+function finishGame(){
+const container=document.querySelector(".container");
+
+let stars="⭐";
+if(score>40)stars="⭐⭐⭐";
+else if(score>25)stars="⭐⭐";
+
+container.innerHTML=`
+<h1>Great work!</h1>
+<p>Your score: ${score}</p>
+<div style="font-size:40px">${stars}</div>
+<button onclick="startReview()" style="margin-top:20px;padding:12px 18px;font-size:16px;border:none;border-radius:8px;background:#4a6fa5;color:white;cursor:pointer">🧠 Review Mistakes</button>
+<button onclick="location.reload()" style="margin-top:10px;padding:12px 18px;font-size:16px;border:none;border-radius:8px;background:#6c8cff;color:white;cursor:pointer">Play Again</button>
+`;
+}
+
+function startReview(){
+reviewMode=true;
+index=0;
+score=0;
+
+if(mistakes.length===0){
+alert("Amazing! No mistakes to review!");
+location.reload();
+return;
+}
+
+location.reload();
+}
+
+loadQuestion();
+
+</script>
+
+</body>
+</html>
